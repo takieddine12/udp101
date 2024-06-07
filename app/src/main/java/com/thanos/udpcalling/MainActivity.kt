@@ -1,6 +1,7 @@
 package com.thanos.udpcalling
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
@@ -23,13 +24,12 @@ import java.net.InetAddress
 import java.net.SocketException
 
 class MainActivity : AppCompatActivity() {
+    private var port = 0
     private lateinit var startCallButton: Button
     private lateinit var endCallButton: Button
     private lateinit var ipAddressEditText: EditText
     private lateinit var portEditText: EditText
     private lateinit var deviceIpTextView: TextView
-
-    private var port: Int = 9876
     private val sampleRate = 44100
     private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
@@ -96,7 +96,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
+    @SuppressLint("MissingPermission")
     private suspend fun startCall(ipAddress: String) {
         withContext(Dispatchers.IO) {
             val socket = DatagramSocket()
