@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
-import android.media.AudioTrack
 import android.media.MediaRecorder
 import android.net.wifi.WifiManager
 import android.os.Bundle
@@ -21,8 +20,6 @@ import kotlinx.coroutines.*
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
-import java.net.SocketException
-
 class MainActivity : AppCompatActivity() {
     private var port = 0
     private lateinit var startCallButton: Button
@@ -96,6 +93,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     @SuppressLint("MissingPermission")
     private suspend fun startCall(ipAddress: String) {
         withContext(Dispatchers.IO) {
@@ -108,40 +106,8 @@ class MainActivity : AppCompatActivity() {
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize
             )
-            val audioTrack = AudioTrack(
-                AudioFormat.CHANNEL_OUT_MONO,
-                sampleRate,
-                AudioFormat.CHANNEL_OUT_MONO,
-                AudioFormat.ENCODING_PCM_16BIT,
-                bufferSize,
-                AudioTrack.MODE_STREAM
-            )
 
             audioRecord.startRecording()
-            audioTrack.play()
-
-            val receiveJob = launch {
-                try {
-                    val receiveSocket = DatagramSocket(port)
-                    val buffer = ByteArray(bufferSize)
-                    while (isCalling) {
-                        val packet = DatagramPacket(buffer, buffer.size)
-                        receiveSocket.receive(packet)
-                        val message = String(packet.data, 0, packet.length)
-                        if (message == END_CALL_MESSAGE) {
-                            withContext(Dispatchers.Main) {
-                                endCallUIUpdate()
-                            }
-                            isCalling = false
-                            break
-                        }
-                        audioTrack.write(packet.data, 0, packet.length)
-                    }
-                    receiveSocket.close()
-                } catch (e: SocketException) {
-                    // Handle socket closed exception
-                }
-            }
 
             try {
                 while (isCalling) {
@@ -156,10 +122,7 @@ class MainActivity : AppCompatActivity() {
             } finally {
                 audioRecord.stop()
                 audioRecord.release()
-                audioTrack.stop()
-                audioTrack.release()
                 socket.close()
-                receiveJob.cancel()
                 withContext(Dispatchers.Main) {
                     endCallUIUpdate()
                 }

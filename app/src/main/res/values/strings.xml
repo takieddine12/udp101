@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">UdpCalling</string>
+    <string name="sender">Sender</string>
+    <string name="receiver">Receiver</string>
 </resources>
