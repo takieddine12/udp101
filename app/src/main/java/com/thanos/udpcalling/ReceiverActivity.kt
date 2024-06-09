@@ -1,6 +1,7 @@
 package com.thanos.udpcalling
 
-import com.thanos.udpcalling.R
+import android.Manifest
+import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioManager
 import android.media.AudioTrack
@@ -12,10 +13,13 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.*
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.InetAddress
+import java.net.SocketException
 
 class ReceiverActivity : AppCompatActivity() {
     private var port = 0
@@ -75,6 +79,10 @@ class ReceiverActivity : AppCompatActivity() {
             listenJob?.cancel()
             startListeningButton.visibility = Button.VISIBLE
             stopListeningButton.visibility = Button.GONE
+
+            coroutineScope.launch {
+                sendEndCallMessage(getDeviceIpAddress(), port)
+            }
         }
     }
 
@@ -107,6 +115,8 @@ class ReceiverActivity : AppCompatActivity() {
                     }
                     audioTrack.write(packet.data, 0, packet.length)
                 }
+            } catch (e: SocketException) {
+                // Handle socket closed exception
             } finally {
                 audioTrack.stop()
                 audioTrack.release()
@@ -115,6 +125,17 @@ class ReceiverActivity : AppCompatActivity() {
                     endListeningUIUpdate()
                 }
             }
+        }
+    }
+
+    private suspend fun sendEndCallMessage(ipAddress: String, port: Int) {
+        withContext(Dispatchers.IO) {
+            val socket = DatagramSocket()
+            val address = InetAddress.getByName(ipAddress)
+            val buffer = END_CALL_MESSAGE.toByteArray()
+            val packet = DatagramPacket(buffer, buffer.size, address, port)
+            socket.send(packet)
+            socket.close()
         }
     }
 

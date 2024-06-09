@@ -20,6 +20,8 @@ import kotlinx.coroutines.*
 import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
+import java.net.SocketException
+
 class MainActivity : AppCompatActivity() {
     private var port = 0
     private lateinit var startCallButton: Button
@@ -109,6 +111,28 @@ class MainActivity : AppCompatActivity() {
 
             audioRecord.startRecording()
 
+            val receiveJob = launch {
+                try {
+                    val receiveSocket = DatagramSocket(port)
+                    val buffer = ByteArray(bufferSize)
+                    while (isCalling) {
+                        val packet = DatagramPacket(buffer, buffer.size)
+                        receiveSocket.receive(packet)
+                        val message = String(packet.data, 0, packet.length)
+                        if (message == END_CALL_MESSAGE) {
+                            withContext(Dispatchers.Main) {
+                                endCallUIUpdate()
+                            }
+                            isCalling = false
+                            break
+                        }
+                    }
+                    receiveSocket.close()
+                } catch (e: SocketException) {
+                    // Handle socket closed exception
+                }
+            }
+
             try {
                 while (isCalling) {
                     val buffer = ByteArray(bufferSize)
@@ -123,6 +147,7 @@ class MainActivity : AppCompatActivity() {
                 audioRecord.stop()
                 audioRecord.release()
                 socket.close()
+                receiveJob.cancel()
                 withContext(Dispatchers.Main) {
                     endCallUIUpdate()
                 }
