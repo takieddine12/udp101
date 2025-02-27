@@ -2,16 +2,20 @@ package com.thanos.udpcalling
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
+import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.net.wifi.WifiManager
 import android.os.Bundle
+import android.text.InputType
 import android.text.format.Formatter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -26,7 +30,6 @@ import java.net.SocketException
 
 class MainActivity : AppCompatActivity() {
 
-    private val bufferSizes = arrayOf(1024, 2048, 4096, 8192, 16384)
     private var bufferSize = 4096
     private var port = 0
     private lateinit var startCallButton: Button
@@ -70,17 +73,27 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showBufferSizeDialog(){
+    private fun showBufferSizeDialog() {
+        val marginPx = dpToPx(20, this)
 
-        val currentSelectionIndex = bufferSizes.indexOf(bufferSize)
+
+        val editText = EditText(this).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+        }
+
+
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(marginPx, marginPx, marginPx, marginPx)
+            addView(editText)
+        }
 
         AlertDialog.Builder(this)
-            .setTitle("Pick Buffer Size")
-            .setSingleChoiceItems(bufferSizes.map { "$it bytes" }.toTypedArray(),currentSelectionIndex) { dialog, which ->
-                bufferSize = bufferSizes[which]
-            }
-            .setPositiveButton("OK") { dialog, _ ->
-                Toast.makeText(this, "Selected : $bufferSize",Toast.LENGTH_LONG).show()
+            .setTitle("Add Buffer Size")
+            .setView(layout)
+            .setPositiveButton("Proceed") { dialog, _ ->
+                val buffer = editText.text.toString().toIntOrNull() ?: 4096
+                Toast.makeText(this, "Buffer: $buffer", Toast.LENGTH_LONG).show()
                 dialog.dismiss()
             }
             .setNegativeButton("Cancel") { dialog, _ ->
@@ -88,8 +101,13 @@ class MainActivity : AppCompatActivity() {
             }
             .create()
             .show()
-
     }
+
+    // Function to Convert dp to pixels
+    private fun dpToPx(dp: Int, context: Context): Int {
+        return (dp * context.resources.displayMetrics.density).toInt()
+    }
+
 
     private fun setupButtons() {
         startCallButton.setOnClickListener {
