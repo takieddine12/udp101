@@ -11,8 +11,10 @@ import android.os.Bundle
 import android.text.format.Formatter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -23,6 +25,9 @@ import java.net.InetAddress
 import java.net.SocketException
 
 class MainActivity : AppCompatActivity() {
+
+    private val bufferSizes = arrayOf(1024, 2048, 4096, 8192, 16384)
+    private var bufferSize = 4096
     private var port = 0
     private lateinit var startCallButton: Button
     private lateinit var endCallButton: Button
@@ -30,9 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var portEditText: EditText
     private lateinit var deviceIpTextView: TextView
     private val sampleRate = 44100
-    private val bufferSize = AudioRecord.getMinBufferSize(sampleRate, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT)
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
-
     private var isCalling = false
     private var callJob: Job? = null
 
@@ -50,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         ipAddressEditText = findViewById(R.id.ipAddressEditText)
         portEditText = findViewById(R.id.portEditText)
         deviceIpTextView = findViewById(R.id.deviceIpTextView)
+        val pickBuffer = findViewById<ImageView>(R.id.pickBufferSize)
 
         // Display the device IP address
         deviceIpTextView.text = "Device IP: ${getDeviceIpAddress()}"
@@ -60,6 +64,31 @@ class MainActivity : AppCompatActivity() {
         } else {
             setupButtons()
         }
+
+        pickBuffer.setOnClickListener {
+            showBufferSizeDialog()
+        }
+    }
+
+    private fun showBufferSizeDialog(){
+
+        val currentSelectionIndex = bufferSizes.indexOf(bufferSize)
+
+        AlertDialog.Builder(this)
+            .setTitle("Pick Buffer Size")
+            .setSingleChoiceItems(bufferSizes.map { "$it bytes" }.toTypedArray(),currentSelectionIndex) { dialog, which ->
+                bufferSize = bufferSizes[which]
+            }
+            .setPositiveButton("OK") { dialog, _ ->
+                Toast.makeText(this, "Selected : $bufferSize",Toast.LENGTH_LONG).show()
+                dialog.dismiss()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .create()
+            .show()
+
     }
 
     private fun setupButtons() {
