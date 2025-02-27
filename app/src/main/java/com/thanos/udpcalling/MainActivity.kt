@@ -35,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var startCallButton: Button
     private lateinit var endCallButton: Button
     private lateinit var ipAddressEditText: EditText
+    private lateinit var bufferSizeEditText: EditText
     private lateinit var portEditText: EditText
     private lateinit var deviceIpTextView: TextView
     private val sampleRate = 44100
@@ -56,7 +57,7 @@ class MainActivity : AppCompatActivity() {
         ipAddressEditText = findViewById(R.id.ipAddressEditText)
         portEditText = findViewById(R.id.portEditText)
         deviceIpTextView = findViewById(R.id.deviceIpTextView)
-        val pickBuffer = findViewById<ImageView>(R.id.pickBufferSize)
+        bufferSizeEditText = findViewById(R.id.bufferEditText)
 
         // Display the device IP address
         deviceIpTextView.text = "Device IP: ${getDeviceIpAddress()}"
@@ -68,44 +69,6 @@ class MainActivity : AppCompatActivity() {
             setupButtons()
         }
 
-        pickBuffer.setOnClickListener {
-            showBufferSizeDialog()
-        }
-    }
-
-    private fun showBufferSizeDialog() {
-        val marginPx = dpToPx(20, this)
-
-
-        val editText = EditText(this).apply {
-            inputType = InputType.TYPE_CLASS_NUMBER
-        }
-
-
-        val layout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(marginPx, marginPx, marginPx, marginPx)
-            addView(editText)
-        }
-
-        AlertDialog.Builder(this)
-            .setTitle("Add Buffer Size")
-            .setView(layout)
-            .setPositiveButton("Proceed") { dialog, _ ->
-                val buffer = editText.text.toString().toIntOrNull() ?: 4096
-                Toast.makeText(this, "Buffer: $buffer", Toast.LENGTH_LONG).show()
-                dialog.dismiss()
-            }
-            .setNegativeButton("Cancel") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .create()
-            .show()
-    }
-
-    // Function to Convert dp to pixels
-    private fun dpToPx(dp: Int, context: Context): Int {
-        return (dp * context.resources.displayMetrics.density).toInt()
     }
 
 
@@ -113,12 +76,20 @@ class MainActivity : AppCompatActivity() {
         startCallButton.setOnClickListener {
             val ipAddress = ipAddressEditText.text.toString()
             val portText = portEditText.text.toString()
+            val buffer = bufferSizeEditText.text.toString()
+
             if (ipAddress.isEmpty() || portText.isEmpty()) {
                 Toast.makeText(this, "Please enter IP address and port", Toast.LENGTH_LONG).show()
                 return@setOnClickListener
             }
 
+            if (buffer.isEmpty()){
+                Toast.makeText(this, "Please enter buffer size", Toast.LENGTH_LONG).show()
+                return@setOnClickListener
+            }
+
             port = portText.toInt()
+            bufferSize = buffer.toInt()
 
             if (!isCalling) {
                 isCalling = true

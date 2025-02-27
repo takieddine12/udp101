@@ -8,12 +8,6 @@
     android:layout_gravity="center"
     android:gravity="center">
 
-    <ImageView
-        android:id="@+id/pickBufferSize"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:src="@drawable/picker"
-        app:tint="@color/white" />
 
     <EditText
         android:id="@+id/ipAddressEditText"
@@ -31,6 +25,18 @@
         android:layout_marginStart="50dp"
         android:layout_marginEnd="50dp"
         android:hint="Enter Port"
+        android:inputType="number"
+        android:layout_below="@id/ipAddressEditText"
+        android:layout_centerHorizontal="true"
+        android:layout_marginTop="8dp"/>
+
+    <EditText
+        android:id="@+id/bufferEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="50dp"
+        android:layout_marginEnd="50dp"
+        android:hint="Buffer Size"
         android:inputType="number"
         android:layout_below="@id/ipAddressEditText"
         android:layout_centerHorizontal="true"
