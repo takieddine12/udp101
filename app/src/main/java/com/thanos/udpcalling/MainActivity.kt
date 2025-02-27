@@ -2,23 +2,17 @@ package com.thanos.udpcalling
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
-import android.content.DialogInterface
 import android.content.pm.PackageManager
 import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.net.wifi.WifiManager
 import android.os.Bundle
-import android.text.InputType
 import android.text.format.Formatter
 import android.widget.Button
 import android.widget.EditText
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -27,6 +21,9 @@ import java.net.DatagramPacket
 import java.net.DatagramSocket
 import java.net.InetAddress
 import java.net.SocketException
+import android.media.audiofx.AcousticEchoCanceler
+import android.media.audiofx.AutomaticGainControl
+import android.media.audiofx.NoiseSuppressor
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,6 +45,7 @@ class MainActivity : AppCompatActivity() {
         private const val END_CALL_MESSAGE = "END_CALL"
     }
 
+    @SuppressLint("SetTextI18n")
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -59,10 +57,8 @@ class MainActivity : AppCompatActivity() {
         deviceIpTextView = findViewById(R.id.deviceIpTextView)
         bufferSizeEditText = findViewById(R.id.bufferEditText)
 
-        // Display the device IP address
         deviceIpTextView.text = "Device IP: ${getDeviceIpAddress()}"
 
-        // Check for audio recording permission
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQUEST_RECORD_AUDIO_PERMISSION)
         } else {
@@ -119,13 +115,17 @@ class MainActivity : AppCompatActivity() {
         withContext(Dispatchers.IO) {
             val socket = DatagramSocket()
             val address = InetAddress.getByName(ipAddress)
+
             val audioRecord = AudioRecord(
-                MediaRecorder.AudioSource.MIC,
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION,
                 sampleRate,
                 AudioFormat.CHANNEL_IN_MONO,
                 AudioFormat.ENCODING_PCM_16BIT,
                 bufferSize
             )
+
+            // Apply Noise Cancellation
+            enableNoiseCancellation(audioRecord.audioSessionId)
 
             audioRecord.startRecording()
 
@@ -172,6 +172,29 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+
+    private fun enableNoiseCancellation(audioSessionId: Int) {
+
+        // Removes background noise
+        if (NoiseSuppressor.isAvailable()) {
+            val noiseSuppressor = NoiseSuppressor.create(audioSessionId)
+            noiseSuppressor?.enabled = true
+        }
+
+        // Reduces echo caused by the speaker output
+        if (AcousticEchoCanceler.isAvailable()) {
+            val echoCanceler = AcousticEchoCanceler.create(audioSessionId)
+            echoCanceler?.enabled = true
+        }
+
+        // Stabilizes the volume levels
+        if (AutomaticGainControl.isAvailable()) {
+            val gainControl = AutomaticGainControl.create(audioSessionId)
+            gainControl?.enabled = true
+        }
+    }
+
 
     private suspend fun sendEndCallMessage(ipAddress: String, port: Int) {
         withContext(Dispatchers.IO) {
